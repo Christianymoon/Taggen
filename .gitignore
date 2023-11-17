@@ -1,0 +1,7 @@
+__pycache__
+build
+dist
+env
+old barcodes
+delallpdfs.bat
+taggen.spec
