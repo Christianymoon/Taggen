@@ -3,14 +3,8 @@ from reportlab.lib.units import inch, cm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.lib.utils import ImageReader
 from fooconvert import footwear
-
-data = {
-    "model": "7822 LT. BROWN",
-    "measure": 9.5,
-    "ordercode": "VMX TEST",
-    "barcode": 844787030504,
-}
-
+from report import PDFReport
+import os 
 
 class Gen():
     def __init__(self, pdfmeasure=(13*inch, 19*inch), save_file_path="pdfgen.pdf") -> None:
@@ -39,7 +33,7 @@ class Gen():
         self.pdfgen.rotate(90)
         self.pdfgen.scale(-1, -1)
         self.image = ImageReader(filepath)
-        self.pdfgen.drawImage(self.image, 0, 0, width=3.6*cm, height=3*cm, mask="auto")
+        self.pdfgen.drawImage(self.image, 0, 0, width=3.6*cm, height=3*cm, mask=None)
         self.pdfgen.restoreState()
 
         self.pdfgen.saveState()
@@ -146,6 +140,7 @@ class Gen():
 
         self.pdfgen.restoreState()
 
+
     def tag_clase_b(self, data, tag_measure, filepath="", barcode_path="./barcode.png", alignment=0):
 
         separation = (0.5*cm, self.pagesize[1] - tag_measure[1] - 0.5*cm)
@@ -165,7 +160,7 @@ class Gen():
         self.pdfgen.translate(separation[0] + 1*cm, separation[1] + 5.1*cm)
         self.pdfgen.rotate(90)
         self.pdfgen.scale(-1, -1)
-        self.pdfgen.drawImage(barcode_path, 0, 0, width=4.6*cm, height=2.8*cm, preserveAspectRatio=True)
+        self.pdfgen.drawImage(barcode_path, 0, 0, width=4.6*cm, height=2.8*cm, preserveAspectRatio=True, mask=[0,2,40,42,136,139])
         self.pdfgen.restoreState()
         #set the model
         self.pdfgen.saveState()
@@ -188,13 +183,13 @@ class Gen():
         self.pdfgen.saveState()
         self.pdfgen.translate(separation[0] + 11.5*cm, separation[1] + 0.3*cm)
         self.image = ImageReader(filepath)
-        self.pdfgen.drawImage(self.current_photo_file, 0, 0, width=4*cm, height=4*cm, preserveAspectRatio=True)
+        self.pdfgen.drawImage(self.current_photo_file, 0, 0, width=4*cm, height=4*cm, preserveAspectRatio=True, mask=[0, 2, 0, 2, 0, 2, ])
         self.pdfgen.restoreState()
         #draw the ordercode
         self.pdfgen.saveState()
-        self.pdfgen.translate(separation[0] + 13.5*cm, separation[1] + 4.7*cm)
+        self.pdfgen.translate(separation[0] + 13.5*cm, separation[1] + 4.5*cm)
         self.pdfgen.setFillColorCMYK(0, 0, 0, 0)
-        self.pdfgen.setFont("Helvetica-Bold", 14)
+        self.pdfgen.setFont("Helvetica-Bold", 22)
         self.pdfgen.drawCentredString(0, 0, data["ordercode"])
         self.pdfgen.restoreState()
         #draw webpage
@@ -248,6 +243,7 @@ class Gen():
         self.pdfgen.restoreState()
 
         self.pdfgen.restoreState()
+  
 
     def gen_recursive_tag(self, data, clase, tag_measure=(4.6*cm, 12*cm), quantity=0):
         spacedrawedx = 0
@@ -277,54 +273,68 @@ class Gen():
                 self.pdfgen.showPage()
         self.pdfgen.save()
 
-    def draw_multiple_recursive(self, data, clase, tag_measure=(4.6*cm, 12*cm), quantity=0, alignment=0):
-        count = 0
-        print(self.spacedrawedy)
-        print(self.spacedrawedx)
+    def update_progress(self, progressbar, percentage):
+        progressbar.set(percentage)
 
-        if quantity == 0:
-            return NotImplementedError
 
-        #PAGE SIZE [0] = WIDTH
-        #PAGE SIZE [1] = HEIGHT
-        
-        while self.pagesize[1] - self.spacedrawedy > tag_measure[1]: #vertical
-            if (self.pagesize[0] - self.spacedrawedx) == self.pagesize[0]: # Si hay espacio absoluto 
-                 self.pdfgen.saveState()
-            while self.pagesize[0] - self.spacedrawedx > tag_measure[0]: #horizontal
-                clase(data, tag_measure, self.current_photo_file, self.barcode_basename, alignment) 
-                print(data)
-                self.spacedrawedx += tag_measure[0]
-                count += 1
-                self.pdfgen.translate(tag_measure[0], 0) 
-                if count == quantity:
-                    break
-            if count == quantity:
-                if self.pagesize[0] - self.spacedrawedx < tag_measure[0]:
-                    self.spacedrawedx = 0
-                    self.spacedrawedy += tag_measure[1]
-                    self.pdfgen.restoreState()
-                    if self.pagesize[1] - self.spacedrawedy > tag_measure[1]:
+    def draw(self, clase, label, tagconfig, progressbar):
+        report = PDFReport(filename=f"report-{tagconfig['current_model']}.pdf")
+        report.write(f"Informacion - {tagconfig['current_model']} - {tagconfig['current_ordercode']}", 100, 700, bold=True)
+        report.write(f"Generacion total: {tagconfig['total_quantity']}", 100, 680, bold=True)
+        report.write(f"Cantidad por medida: {tagconfig['quantitys']}", 100, 660)
+        report.write(f"Medidas: {tagconfig['current_measure']}", 100, 640)
+        report.write(f"Ruta de imagen: {self.current_photo_file}", 100, 620)
+
+        tag_measure = tagconfig["measure"][tagconfig["selection"]]
+        report.write(f"Medida seleccionada: {tag_measure[0] / cm} cm. x {tag_measure[1] / cm} cm.", 100, 600)
+        barcodes_basenames = []
+        value = 0
+        iteration = 0
+
+        for quantity, measure in zip(tagconfig["quantitys"], tagconfig["current_measure"]): # array
+            label.extract_data(tagconfig["current_model"], measure, tagconfig["current_ordercode"])
+            label_data = label.tagdata()
+            basename = label.makebarcode(label_data) 
+            for i in range(quantity):
+                if (self.pagesize[0] - self.spacedrawedx) == self.pagesize[0]: # if space to width exist
+                        self.pdfgen.saveState()
+                try:
+                    clase(label_data, 
+                        tag_measure,
+                        self.current_photo_file,
+                        basename,
+                        tagconfig["alignment"])   
+                    self.pdfgen.translate(tag_measure[0], 0) #translate to width
+                    self.spacedrawedx += tag_measure[0]
+                    if self.pagesize[0] - self.spacedrawedx < tag_measure[0]: # if not space to width exist
+                        self.pdfgen.restoreState()
+                        self.spacedrawedx = 0
                         self.pdfgen.translate(0, -tag_measure[1])
-                    else:
+                        self.spacedrawedy += tag_measure[1]
+                        
+                    if self.pagesize[1] - self.spacedrawedy < tag_measure[1]: # if not space to heigth exist
                         self.spacedrawedy = 0
+                        self.spacedrawedx = 0
                         self.pdfgen.showPage()
-                break
-            self.pdfgen.restoreState()
-            self.spacedrawedy += tag_measure[1]
-            self.spacedrawedx = 0
-            if self.pagesize[1] - self.spacedrawedy > tag_measure[1]:
-                self.pdfgen.translate(0, -tag_measure[1])
-                continue
-            else:
-                self.spacedrawedx = 0
-                self.spacedrawedy = 0
-                self.pdfgen.showPage()
+                except Exception as e:
+                    report.write(f"Error al generar etiqueta: {e}", 100, 100, bold=True)
+                    self.pdfgen.save()
+                    return
+                barcodes_basenames.append(basename)
+            iteration += 1
+            report.write(f"Etiqueta {measure} generada {quantity} veces - Codigo: {label_data['barcode']}", 100, 580 - (iteration * 20))
+            value = (iteration / len(tagconfig["quantitys"]))
+            self.update_progress(progressbar, value)
+        report.save()
+        self.pdfgen.save()
+        for file in barcodes_basenames:
+            if os.path.exists(file):
+                os.remove(file)
+
+
+
+
 
 if __name__ == '__main__':
-    measure1 = (4.6*cm, 12*cm)
-    measure2 = (16*cm, 5.7*cm)
-    pdf = Gen()
-    pdf.tag_clase_a(data, tag_measure=measure2, filepath="./wine boot.jpg")
-    pdf.pdfgen.save()
+    pass
 

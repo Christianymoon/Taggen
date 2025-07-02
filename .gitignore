@@ -4,4 +4,7 @@ dist
 env
 old barcodes
 delallpdfs.bat
+allbarcodes.csv
+tools
+upcean
 taggen.spec
