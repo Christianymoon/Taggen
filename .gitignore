@@ -4,3 +4,5 @@ dist
 env
 old barcodes
 delallpdfs.bat
+.venv
+
