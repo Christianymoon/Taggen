@@ -16,11 +16,10 @@ class Gen():
         self.spacedrawedx = 0
         self.spacedrawedy = 0
 
-    def draw_tag(self, data, barcode_path="./barcode.png"):
+    def draw_tag(self, data, basename=""):
 
         separation = (0.5*cm, self.pagesize[1] - self.taginfo["measure"][1] - 0.5*cm)
         self.pdfgen.saveState()
-        self.barcode_basename = barcode_path
         #creeate tag layout
         self.pdfgen.saveState()
         self.pdfgen.translate(separation[0], separation[1])
@@ -33,7 +32,7 @@ class Gen():
         self.pdfgen.translate(separation[0] + 0*cm, separation[1] + 4.5*cm)
         self.pdfgen.rotate(90)
         self.pdfgen.scale(-1, -1)
-        self.pdfgen.drawImage(barcode_path, 0, 0, width=4*cm, height=3*cm, preserveAspectRatio=True, mask=[0,2,40,42,136,139])
+        self.pdfgen.drawImage(basename, 0, 0, width=4*cm, height=3*cm, preserveAspectRatio=True, mask=[0,2,40,42,136,139])
         self.pdfgen.restoreState()
         #set the model
         self.pdfgen.saveState()
@@ -45,7 +44,7 @@ class Gen():
         else:
             self.pdfgen.translate(separation[0] + 3*cm, separation[1] + 4.0*cm)
             self.pdfgen.setFillColorCMYK(0, 0, 0, 0) #WHITE
-            self.pdfgen.setFont("Helvetica-Bold", 22)
+            self.pdfgen.setFont("Helvetica-Bold", 18)
             self.pdfgen.drawString(0, 0, data["model"])
         self.pdfgen.restoreState()
         #draw the boot image
@@ -58,7 +57,7 @@ class Gen():
         self.pdfgen.saveState()
         self.pdfgen.translate(separation[0] + 11.0*cm, separation[1] + 4.0*cm)
         self.pdfgen.setFillColorCMYK(0, 0, 0, 0)
-        self.pdfgen.setFont("Helvetica-Bold", 22)
+        self.pdfgen.setFont("Helvetica-Bold", 18)
         self.pdfgen.drawCentredString(0, 0, data["ordercode"])
         self.pdfgen.restoreState()
         #draw webpage
@@ -139,7 +138,7 @@ class Gen():
                 if (self.pagesize[0] - self.spacedrawedx) == self.pagesize[0]: # if space to width exist
                         self.pdfgen.saveState()
                 try:
-                    self.draw_tag(barcode_data)   
+                    self.draw_tag(barcode_data, basename=basename)   
                     self.pdfgen.translate(self.taginfo["measure"][0], 0) #translate to width
                     self.spacedrawedx += self.taginfo["measure"][0]
                     if self.pagesize[0] - self.spacedrawedx < self.taginfo["measure"][0]: # if not space to width exist
