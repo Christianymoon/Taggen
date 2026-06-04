@@ -5,4 +5,5 @@ env
 old barcodes
 delallpdfs.bat
 .venv
-
+settings.json
+report-*.pdf
