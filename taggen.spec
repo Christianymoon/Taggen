@@ -5,7 +5,7 @@ a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[('C:\\Users\\Christian\\Documents\\Datos\\DEV\\taggen 2.1\\.venv\\Lib\\site-packages\\customtkinter', 'customtkinter\\')],
+    datas=[('C:\\Users\\Christian\\Desktop\\Taggen\\.venv\Lib\\site-packages\\customtkinter', 'customtkinter\\')],
     hiddenimports=['upcean'],
     hookspath=[],
     hooksconfig={},
